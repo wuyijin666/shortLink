@@ -10,7 +10,7 @@ import java.util.Date;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class UrlMap extends BaseModel implements Serializable {
-    private String id;
+    private Long id;
     private String longUrl;
     private String shortUrl;
     private Date createAt;

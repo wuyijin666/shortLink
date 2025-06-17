@@ -3,6 +3,7 @@ package org.example.shortlink.service.impl;
 import org.example.shortlink.mapper.UrlMapMapper;
 import org.example.shortlink.model.UrlMap;
 import org.example.shortlink.service.ShortUrlXService;
+import org.example.shortlink.utils.Base62;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -30,8 +31,10 @@ public class ShortUrlXServiceImpl implements ShortUrlXService {
         UrlMap urlMap = new UrlMap(longUrl);
         urlMapMapper.dbCreate(urlMap);
         // 利用base62算法 生成短链
-        shortUrl = base62.encode(urlMap.getId());
+        shortUrl = base62.generateShortUrl(urlMap.getId());
 
-
+        // 更新db中的短链
+        urlMapMapper.doUpdate(shortUrl, urlMap.getLongUrl());
+        return shortUrl;
     }
 }

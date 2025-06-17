@@ -8,8 +8,8 @@ import org.example.shortlink.model.UrlMap;
 public interface UrlMapMapper {
     void dbCreate(@Param("urlMap") UrlMap urlMap);
 
-    String doGetLongUrl(@Param("longUrl") String longUrl);
-    String doGetShortUrl(@Param("shortUrl") String shortUrl);
+    String doGetLongUrl(@Param("shortUrl") String shortUrl);
+    String doGetShortUrl(@Param("longUrl") String longUrl);
     void doUpdate(@Param("shortUrl") String shortUrl, @Param("longUrl") String longUrl);
 
 

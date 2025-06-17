@@ -33,7 +33,7 @@ public class ShortUrlXController {
         return ResponseEntity.ok(shortUrl);
     }
 
-    // 进行重定向函数
+    // 进行重定向函数 重定向到对应的短链
     public void sendRedirect(String longUrl, HttpServletResponse response) throws IOException {
         response.sendRedirect(longUrl);
         response.setHeader("Location", longUrl);

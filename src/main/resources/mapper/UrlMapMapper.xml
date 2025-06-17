@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+   <mapper namespace="org.example.shortlink.mapper.UrlMapMapper">
+    <resultMap id="UrlMap" type="org.example.shortlink.model.UrlMap">
+        <id column="id" property="id" />
+        <result column="short_url" property="shortUrl" />
+        <result column="long_url" property="longUrl" />
+        <result column="create_at" property="createAt" />
+    </resultMap>
+
+    <insert id="dbCreate" useGeneratedKeys="true" keyProperty="urlMap.id">
+            INSERT INTO url_map (long_url, short_url, create_at) VALUES (#{urlMap.longUrl}, #{urlMap.shortUrl}, now())
+    </insert>
+
+    <select id="doGetShortUrl" resultType="String">
+        SELECT short_url FROM url_map WHERE long_url = #{longUrl}
+    </select>
+    <select id="doGetLongUrl" resultType="String">
+        SELECT long_url FROM url_map WHERE short_url = #{shortUrl}
+    </select>
+
+    <update id="doUpdate" >
+        UPDATE url_map SET short_url = #{shortUrl} WHERE long_url = #{longUrl}
+    </update>
+</mapper>
+
