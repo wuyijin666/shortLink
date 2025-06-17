@@ -33,6 +33,23 @@ public class ShortUrlXController {
         return ResponseEntity.ok(shortUrl);
     }
 
+    // v2
+    @GetMapping("/v2/{shortUrl}")
+    public void redirectToLongurlV2(@PathVariable ("shortUrl") String shortUrl, HttpServletResponse response) throws IOException {
+        String longUrl = shortUrlXService.getV2LongUrl(shortUrl);
+        if(longUrl == null){
+            log.info("redirectToLongUrlV2: {} 此短链无效", shortUrl);
+            response.setStatus(404);
+            return;
+        }
+        sendRedirect(longUrl, response);
+    }
+    @PostMapping("/v2/shorten")
+    public ResponseEntity<String> createShortUrlV2(@RequestBody createShortUrlRequest request){
+        String shortUrl = shortUrlXService.createV2ShortUrl(request.longUrl);
+        return ResponseEntity.ok(shortUrl);
+    }
+
     // 进行重定向函数 重定向到对应的短链
     public void sendRedirect(String longUrl, HttpServletResponse response) throws IOException {
         response.sendRedirect(longUrl);

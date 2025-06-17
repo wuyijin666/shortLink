@@ -5,4 +5,7 @@ public interface ShortUrlXService {
 
     String createV1ShortUrl(String longUrl);
 
+    String getV2LongUrl(String shortUrl);
+
+    String createV2ShortUrl(String longUrl);
 }
