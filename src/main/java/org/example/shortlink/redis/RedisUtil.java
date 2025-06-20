@@ -18,12 +18,12 @@ public final class RedisUtil {
      * @param delta 要增加几(大于0)
      * @return
      */
-    public Long incr(String key, long delta) {
-        if(delta < 0) {
-            throw new RuntimeException("递增因子必须大于0");
-        }
-        return redisTemplate.opsForValue().increment(key, delta);
-    }
+   public Long incr (String key, int delta){
+       if(delta < 0) {
+           throw new RuntimeException("递增因子必须大于0");
+       }
+       return redisTemplate.opsForValue().increment(key, 1);
+   }
 
     public List<Object> executeLua(String redisScript, List<String> keys, List<Object> values) {
         try{
@@ -34,7 +34,5 @@ public final class RedisUtil {
             e.printStackTrace();
             return null;
         }
-
-
     }
 }
