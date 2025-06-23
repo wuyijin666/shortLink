@@ -94,7 +94,7 @@ public class ShortUrlXServiceImpl implements ShortUrlXService {
     private final String shortUrlBloomFilterKey = projectPrefix + "BloomFilter-ShortUrl";
     private final String addShortUrlToBloomFilterLua = "redis.call('bf.add', KEYS[1], ARGV[1])";
     // 本lua脚本实现两级缓存查询策略，用于优化短连接服务的查询性能
-    private final String findShortUrlInBloomFilterAndCacheLua = "local bloomKey = KEYS[1]\nlocal cacheKey = KEYS[2]\nlocal bloomVal = ARGV[1]\n\n-- 检查val是否存在于布隆过滤器对应的bloomKey中\nlocal exist = redis.call('bf.exists', bloomKey, bloomVal)\n\n-- 如果bloomVal不存在于布隆过滤器，直接返回空字符串，返回0代表不需要查询db了\nif exists == 0 then\n   return {0, ''}\nend\n\n-- 如果bloomVal存在于布隆过滤器，查询cacheKey\nlocal value = redis.call('GET', cacheKey)\n\n-- 如果cacheKey存在，就返回对应的值，否则返回空字符串\nif value then\n return {0, value}\nelse\n return {1, ''}\nend";
+    private final String findShortUrlInBloomFilterAndCacheLua = "local bloomKey = KEYS[1]\nlocal cacheKey = KEYS[2]\nlocal bloomVal = ARGV[1]\n\n-- 检查val是否存在于布隆过滤器对应的bloomKey中\nlocal exist = redis.call('bf.exists', bloomKey, bloomVal)\n\n-- 如果bloomVal不存在于布隆过滤器，直接返回空字符串，返回0代表不需要查询db了\nif exist == 0 then\n   return {0, ''}\nend\n\n-- 如果bloomVal存在于布隆过滤器，查询cacheKey\nlocal value = redis.call('GET', cacheKey)\n\n-- 如果cacheKey存在，就返回对应的值，否则返回空字符串\nif value then\n return {0, value}\nelse\n return {1, ''}\nend";
 
 
 }
