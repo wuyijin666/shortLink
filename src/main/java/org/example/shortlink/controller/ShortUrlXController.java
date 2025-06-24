@@ -35,13 +35,8 @@ public class ShortUrlXController {
 
     // v2
     @GetMapping("/v2/{shortUrl}")
-    public void redirectToLongurlV2(@PathVariable ("shortUrl") String shortUrl, HttpServletResponse response) throws IOException {
+    public void redirectToLongUrlV2(@PathVariable String shortUrl, HttpServletResponse response) throws IOException {
         String longUrl = shortUrlXService.getV2LongUrl(shortUrl);
-        if(longUrl == null){
-            log.info("redirectToLongUrlV2: {} 此短链无效", shortUrl);
-            response.setStatus(404);
-            return;
-        }
         sendRedirect(longUrl, response);
     }
     @PostMapping("/v2/shorten")

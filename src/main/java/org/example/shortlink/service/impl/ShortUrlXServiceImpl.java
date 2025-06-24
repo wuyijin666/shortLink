@@ -28,6 +28,26 @@ public class ShortUrlXServiceImpl implements ShortUrlXService {
     }
 
     @Override
+    public String getV2LongUrl(String shortUrl) {
+        // 1. 先从布隆过滤器中取
+        List<String> keys = new ArrayList<>();
+        keys.add(shortUrlBloomFilterKey);
+        List<Object> values = new ArrayList<>();
+        values.add(shortUrl);
+        List<Object> result = redisUtil.executeLua(findShortUrlFromBloomFilterLua, keys, values);
+        System.out.println("result = " + result);
+        assert result != null;
+        long isExist = (long) result.get(0);
+        if(isExist == 1){
+            // 2. 如果存在，还得从db中取
+            return urlMapMapper.doGetLongUrl(shortUrl);
+        }
+        // 布隆过滤器不存在，直接返回空
+        return null;
+    }
+
+
+    @Override
     public String createV1ShortUrl(String longUrl) {
       // 1. 先从db中获取到
         String shortUrl = urlMapMapper.doGetShortUrl(longUrl);
@@ -43,23 +63,6 @@ public class ShortUrlXServiceImpl implements ShortUrlXService {
         // 更新db中的短链
         urlMapMapper.doUpdate(shortUrl, urlMap.getLongUrl());
         return shortUrl;
-    }
-
-    @Override
-    public String getV2LongUrl(String shortUrl) {
-        // 1. 判断短链是否存在于布隆过滤器中
-        List<String> keys = new ArrayList<>();
-        keys.add(shortUrlBloomFilterKey);
-        List<Object> values = new ArrayList<>();
-        values.add(shortUrl);
-        List<Object> result = redisUtil.executeLua(findShortUrlInBloomFilterAndCacheLua, keys, values);
-        assert result != null;
-        long isExist = (long) result.get(0);
-        if(isExist == 1){
-            // 从db中查
-            return urlMapMapper.doGetLongUrl(shortUrl);
-        }
-        return null;
     }
 
     @Override
@@ -81,6 +84,7 @@ public class ShortUrlXServiceImpl implements ShortUrlXService {
         return shortUrl;
     }
 
+
     private void addShortUrlToBloomFilterLua(String shortUrl) {
         List<String> keys = new ArrayList<>();
         keys.add(shortUrlBloomFilterKey);
@@ -92,6 +96,8 @@ public class ShortUrlXServiceImpl implements ShortUrlXService {
     private final String projectPrefix = "shortUrlX-";
     private final String cacheIdKey = projectPrefix + "IncrId";
     private final String shortUrlBloomFilterKey = projectPrefix + "BloomFilter-ShortUrl";
+    private final String findShortUrlFromBloomFilterLua = "local exist = redis.call('bf.exists', KEYS[1], ARGV[1])\n" +
+            "return exist\n";
     private final String addShortUrlToBloomFilterLua = "redis.call('bf.add', KEYS[1], ARGV[1])";
     // 本lua脚本实现两级缓存查询策略，用于优化短连接服务的查询性能
     private final String findShortUrlInBloomFilterAndCacheLua = "local bloomKey = KEYS[1]\nlocal cacheKey = KEYS[2]\nlocal bloomVal = ARGV[1]\n\n-- 检查val是否存在于布隆过滤器对应的bloomKey中\nlocal exist = redis.call('bf.exists', bloomKey, bloomVal)\n\n-- 如果bloomVal不存在于布隆过滤器，直接返回空字符串，返回0代表不需要查询db了\nif exist == 0 then\n   return {0, ''}\nend\n\n-- 如果bloomVal存在于布隆过滤器，查询cacheKey\nlocal value = redis.call('GET', cacheKey)\n\n-- 如果cacheKey存在，就返回对应的值，否则返回空字符串\nif value then\n return {0, value}\nelse\n return {1, ''}\nend";
