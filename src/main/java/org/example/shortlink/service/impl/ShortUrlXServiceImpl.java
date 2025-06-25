@@ -5,6 +5,7 @@ import org.example.shortlink.model.UrlMap;
 import org.example.shortlink.redis.RedisUtil;
 import org.example.shortlink.service.ShortUrlXService;
 import org.example.shortlink.utils.Base62;
+import org.example.shortlink.utils.SnowflakeIdWorker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,8 @@ public class ShortUrlXServiceImpl implements ShortUrlXService {
     private Base62 base62;
     @Autowired
     private RedisUtil redisUtil;
+    @Autowired
+    private SnowflakeIdWorker snowflakeIdWorker;
 
     @Override
     public String getV1LongUrl(String shortUrl) {
@@ -44,6 +47,23 @@ public class ShortUrlXServiceImpl implements ShortUrlXService {
         }
         // 布隆过滤器不存在，直接返回空
         return null;
+    }
+
+    @Override
+    public String getV3LongUrl(String shortUrl) {
+        // 从布隆过滤器中查询以及从缓存中查询
+        List<String> keys = new ArrayList<>();
+        keys.add(shortUrlBloomFilterKey);
+        keys.add(shortUrlPrefix + shortUrl);
+        List<Object> values = new ArrayList<>();
+        values.add(shortUrl);
+        List<Object> result = redisUtil.executeLua(findShortUrlInBloomFilterAndCacheLua, keys, values);
+        assert result != null;
+        long need = (long) result.get(0);
+        if(need == 1){
+            return urlMapMapper.doGetLongUrl(shortUrl);
+        }
+        return (String) result.get(1);
     }
 
 
@@ -84,6 +104,34 @@ public class ShortUrlXServiceImpl implements ShortUrlXService {
         return shortUrl;
     }
 
+    @Override
+    public String createV3ShortUrl(String longUrl) {
+        // 1. 先查询缓存里是否有长链对应的短链
+        String shortUrl = (String) redisUtil.get(longUrlPrefix + longUrl);
+        // 2. 如果有，直接返回该短链
+        if(shortUrl != null && !shortUrl.isEmpty()){
+            return shortUrl;
+        }
+        // 3. 缓存没有，去db中查询是否有该长链对应的短链
+        shortUrl = urlMapMapper.doGetShortUrl(longUrl);
+        // 4. db中有，就更新到缓存中
+        if (shortUrl != null && !shortUrl.isEmpty()){
+            redisUtil.set(longUrlPrefix + longUrl, shortUrl);
+            return shortUrl;
+        }
+        // 5. db中没有，就利用雪花算法生成ID
+        Long id = snowflakeIdWorker.nextId();
+        // 6. 利用base62算法，生成短链
+        shortUrl = base62.generateShortUrl(id);
+        // 7. 将短链保存到布隆过滤器中
+        addShortUrlToBloomFilterLua(shortUrl);
+        // 8. 将短链保存到缓存中，以便下次查询
+        redisUtil.set(longUrlPrefix + longUrl, shortUrl);
+        // 9. 保存db中
+        urlMapMapper.dbCreate(new UrlMap(longUrl, shortUrl));
+        return shortUrl;
+    }
+
 
     private void addShortUrlToBloomFilterLua(String shortUrl) {
         List<String> keys = new ArrayList<>();
@@ -94,6 +142,8 @@ public class ShortUrlXServiceImpl implements ShortUrlXService {
     }
 
     private final String projectPrefix = "shortUrlX-";
+    private final String shortUrlPrefix = projectPrefix + "ShortUrl:";
+    private final String longUrlPrefix = projectPrefix + "LongUrl:";
     private final String cacheIdKey = projectPrefix + "IncrId";
     private final String shortUrlBloomFilterKey = projectPrefix + "BloomFilter-ShortUrl";
     private final String findShortUrlFromBloomFilterLua = "local exist = redis.call('bf.exists', KEYS[1], ARGV[1])\n" +

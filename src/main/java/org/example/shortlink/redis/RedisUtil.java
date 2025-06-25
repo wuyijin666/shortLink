@@ -25,14 +25,44 @@ public final class RedisUtil {
        return redisTemplate.opsForValue().increment(key, 1);
    }
 
-    public List<Object> executeLua(String redisScript, List<String> keys, List<Object> values) {
+
+
+    /**
+     * 普通缓存获取
+     * @param key longUrl 键
+     * @return
+     */
+    public Object get(String key) {
+        return  key == null ? null : redisTemplate.opsForValue().get(key);
+    }
+
+    /**
+     * 普通缓存放入
+     * @param  key longUrl 键
+     * @param value shortUrl 值
+     */
+    public boolean set(String key, Object value) {
+       try{
+           redisTemplate.opsForValue().set(key, value);
+           return true;
+       }catch (Exception e){
+           e.printStackTrace();
+           return false;
+       }
+    }
+
+    public List<Object> executeLua(String redisScript, List<String> keys, List<Object> values){
         try{
             List<Object> result = redisTemplate.execute(new DefaultRedisScript<>(redisScript, List.class), keys, values);
-            System.out.println("result = " + result);
+            System.out.println("result =  " + result);
             return result;
-        }catch (Exception e) {
+        }catch (Exception e){
             e.printStackTrace();
             return null;
         }
+
+
     }
+
+
 }

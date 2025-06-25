@@ -2,7 +2,7 @@ package org.example.shortlink.model;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.example.shortlink.common.conf.BaseModel;
+import org.example.shortlink.common.BaseModel;
 
 import java.io.Serializable;
 import java.util.Date;

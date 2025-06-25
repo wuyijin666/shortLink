@@ -1,10 +1,12 @@
 package org.example.shortlink.controller;
 
+
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.example.shortlink.common.ResponseEntity;
 import org.example.shortlink.service.impl.ShortUrlXServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -44,6 +46,20 @@ public class ShortUrlXController {
         String shortUrl = shortUrlXService.createV2ShortUrl(request.longUrl);
         return ResponseEntity.ok(shortUrl);
     }
+
+    // v3
+    @GetMapping("/v3/{shortUrl}")
+    public void redirectToLongUrlV3(@PathVariable String shortUrl, HttpServletResponse response) throws IOException {
+        String longUrl = shortUrlXService.getV3LongUrl(shortUrl);
+        sendRedirect(longUrl, response);
+    }
+    @PostMapping("/v3/shorten")
+    public ResponseEntity<String> createShortUrlV3(@RequestBody createShortUrlRequest request){
+      String shortUrl = shortUrlXService.createV3ShortUrl(request.longUrl);
+      return ResponseEntity.ok(shortUrl);
+    }
+
+
 
     // 进行重定向函数 重定向到对应的短链
     public void sendRedirect(String longUrl, HttpServletResponse response) throws IOException {

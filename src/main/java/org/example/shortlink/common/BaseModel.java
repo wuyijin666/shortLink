@@ -1,4 +1,4 @@
-package org.example.shortlink.common.conf;
+package org.example.shortlink.common;
 
 import java.io.Serializable;
 import java.util.Date;
